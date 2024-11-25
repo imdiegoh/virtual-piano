@@ -23,7 +23,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         try {
           sampler = new Tone.Sampler({
             urls: PIANO_SAMPLES.urls,
-            volume: PIANO_SAMPLES.volume,
+            volume: -5, // Volumen predeterminado optimizado
             attack: PIANO_SAMPLES.envelope.attack,
             release: PIANO_SAMPLES.envelope.release,
             onload: () => {

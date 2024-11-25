@@ -5,7 +5,6 @@ import { PIANO_SAMPLES } from '@/config/piano';
 
 interface PianoProps {
   octave: number;
-  volume?: number;
 }
 
 interface ActiveNote {
@@ -13,7 +12,7 @@ interface ActiveNote {
   note: string;
 }
 
-const Piano: React.FC<PianoProps> = ({ octave, volume = 0 }) => {
+const Piano: React.FC<PianoProps> = ({ octave }) => {
   const { isAudioInitialized, initializeAudio, sampler: globalSampler } = useAudio();
   const [isLoading, setIsLoading] = useState(true);
   const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
@@ -197,48 +196,23 @@ const Piano: React.FC<PianoProps> = ({ octave, volume = 0 }) => {
                 className={`
                   relative w-16 h-60
                   border border-gray-300
-                  ${isActive ? 'bg-gray-200' : 'bg-white'}
+                  ${isActive ? 'bg-blue-300' : 'bg-white'}
                   hover:bg-gray-50
-                  active:bg-gray-200
-                  transition-colors
-                  duration-75
+                  active:bg-blue-300
+                  transition-colors duration-75
                   focus:outline-none
-                  rounded-b-md
-                  piano-key white-key
+                  first:rounded-l-md last:rounded-r-md
                 `}
-                onMouseDown={() => {
-                  if (isAudioInitialized && !isLoading) {
-                    const keyLower = key.key.toLowerCase();
-                    handleNoteStart(key.note, key.octaveOffset || 0);
-                    setActiveKeys(prev => new Set([...prev, keyLower]));
-                  }
-                }}
-                onMouseUp={() => {
-                  if (isAudioInitialized && !isLoading) {
-                    const keyLower = key.key.toLowerCase();
-                    setActiveKeys(prev => {
-                      const newSet = new Set(prev);
-                      newSet.delete(keyLower);
-                      return newSet;
-                    });
-                    handleNoteEnd(key.note, key.octaveOffset || 0);
-                  }
-                }}
+                onMouseDown={() => handleNoteStart(key.note, key.octaveOffset)}
+                onMouseUp={() => handleNoteEnd(key.note, key.octaveOffset)}
                 onMouseLeave={() => {
-                  if (isAudioInitialized && !isLoading) {
-                    const keyLower = key.key.toLowerCase();
-                    if (activeKeys.has(keyLower)) {
-                      setActiveKeys(prev => {
-                        const newSet = new Set(prev);
-                        newSet.delete(keyLower);
-                        return newSet;
-                      });
-                      handleNoteEnd(key.note, key.octaveOffset || 0);
-                    }
+                  if (activeKeys.has(key.key.toLowerCase())) {
+                    handleNoteEnd(key.note, key.octaveOffset);
                   }
                 }}
+                disabled={isLoading}
               >
-                <span className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-gray-900 font-medium text-sm">
+                <span className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-black font-medium text-sm">
                   {key.label}
                 </span>
               </button>
@@ -247,60 +221,33 @@ const Piano: React.FC<PianoProps> = ({ octave, volume = 0 }) => {
         </div>
 
         {/* Teclas negras */}
-        <div className="absolute top-0 left-0 right-0 h-full">
+        <div className="absolute top-0 left-0 flex">
           {blackKeys.map((key) => {
             const isActive = activeKeys.has(key.key.toLowerCase());
+            const leftPosition = `${(key.position * 4) - 1}rem`;
             return (
               <button
                 key={key.key}
+                style={{ left: leftPosition }}
                 className={`
-                  absolute w-10 h-36
-                  ${isActive ? 'bg-gray-700' : 'bg-black'}
-                  hover:bg-gray-800
-                  active:bg-gray-700
-                  transition-colors
-                  duration-75
+                  absolute w-8 h-36
+                  ${isActive ? 'bg-blue-300' : 'bg-gray-800'}
+                  hover:bg-gray-700
+                  active:bg-blue-300
+                  transition-colors duration-75
                   focus:outline-none
                   rounded-b-md
-                  z-10
-                  piano-key black-key
                 `}
-                style={{
-                  left: `calc(${key.position * 4}rem - 1.25rem)`,
-                }}
-                onMouseDown={() => {
-                  if (isAudioInitialized && !isLoading) {
-                    const keyLower = key.key.toLowerCase();
-                    handleNoteStart(key.note, key.octaveOffset || 0);
-                    setActiveKeys(prev => new Set([...prev, keyLower]));
-                  }
-                }}
-                onMouseUp={() => {
-                  if (isAudioInitialized && !isLoading) {
-                    const keyLower = key.key.toLowerCase();
-                    setActiveKeys(prev => {
-                      const newSet = new Set(prev);
-                      newSet.delete(keyLower);
-                      return newSet;
-                    });
-                    handleNoteEnd(key.note, key.octaveOffset || 0);
-                  }
-                }}
+                onMouseDown={() => handleNoteStart(key.note, key.octaveOffset)}
+                onMouseUp={() => handleNoteEnd(key.note, key.octaveOffset)}
                 onMouseLeave={() => {
-                  if (isAudioInitialized && !isLoading) {
-                    const keyLower = key.key.toLowerCase();
-                    if (activeKeys.has(keyLower)) {
-                      setActiveKeys(prev => {
-                        const newSet = new Set(prev);
-                        newSet.delete(keyLower);
-                        return newSet;
-                      });
-                      handleNoteEnd(key.note, key.octaveOffset || 0);
-                    }
+                  if (activeKeys.has(key.key.toLowerCase())) {
+                    handleNoteEnd(key.note, key.octaveOffset);
                   }
                 }}
+                disabled={isLoading}
               >
-                <span className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-sm">
+                <span className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white font-medium text-sm">
                   {key.label}
                 </span>
               </button>
