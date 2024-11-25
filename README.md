@@ -1,3 +1,5 @@
+[![virtual-piano.png](https://i.postimg.cc/T3BHMqtc/virtual-piano.png)](https://postimg.cc/G4JjvYwB)
+
 # 🎹 Virtual Piano
 
 An interactive virtual piano built with Next.js, TypeScript, and Tone.js.
