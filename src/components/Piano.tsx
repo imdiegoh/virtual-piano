@@ -35,13 +35,13 @@ const Piano: React.FC<PianoProps> = ({ octave, volume = 0 }) => {
   ];
 
   const blackKeys = [
-    { note: 'C#', key: 'W', label: 'W', position: 0 },
-    { note: 'D#', key: 'E', label: 'E', position: 1 },
-    { note: 'F#', key: 'T', label: 'T', position: 3 },
-    { note: 'G#', key: 'Y', label: 'Y', position: 4 },
-    { note: 'A#', key: 'U', label: 'U', position: 5 },
-    { note: 'C#', key: 'O', label: 'O', position: 7, octaveOffset: 1 },
-    { note: 'D#', key: 'P', label: 'P', position: 8, octaveOffset: 1 },
+    { note: 'C#', key: 'W', label: 'W', position: 1 },    // Entre A y S
+    { note: 'D#', key: 'E', label: 'E', position: 2 },    // Entre S y D
+    { note: 'F#', key: 'T', label: 'T', position: 4 },    // Entre F y G
+    { note: 'G#', key: 'Y', label: 'Y', position: 5 },    // Entre G y H
+    { note: 'A#', key: 'U', label: 'U', position: 6 },    // Entre H y J
+    { note: 'C#', key: 'O', label: 'O', position: 8, octaveOffset: 1 },  // Entre K y L
+    { note: 'D#', key: 'P', label: 'P', position: 9, octaveOffset: 1 },  // Entre L y Ñ
   ];
 
   const keyMap = {
@@ -195,9 +195,8 @@ const Piano: React.FC<PianoProps> = ({ octave, volume = 0 }) => {
               <button
                 key={key.key}
                 className={`
-                  relative w-16 h-64
-                  border-l border-gray-300
-                  last:border-r
+                  relative w-16 h-60
+                  border border-gray-300
                   ${isActive ? 'bg-gray-200' : 'bg-white'}
                   hover:bg-gray-50
                   active:bg-gray-200
@@ -205,6 +204,7 @@ const Piano: React.FC<PianoProps> = ({ octave, volume = 0 }) => {
                   duration-75
                   focus:outline-none
                   rounded-b-md
+                  piano-key white-key
                 `}
                 onMouseDown={() => {
                   if (isAudioInitialized && !isLoading) {
@@ -247,15 +247,14 @@ const Piano: React.FC<PianoProps> = ({ octave, volume = 0 }) => {
         </div>
 
         {/* Teclas negras */}
-        <div className="absolute top-0 left-0 flex">
+        <div className="absolute top-0 left-0 right-0 h-full">
           {blackKeys.map((key) => {
             const isActive = activeKeys.has(key.key.toLowerCase());
-            const leftPosition = `${key.position * 4}rem`;
             return (
               <button
                 key={key.key}
                 className={`
-                  absolute w-10 h-40
+                  absolute w-10 h-36
                   ${isActive ? 'bg-gray-700' : 'bg-black'}
                   hover:bg-gray-800
                   active:bg-gray-700
@@ -264,9 +263,10 @@ const Piano: React.FC<PianoProps> = ({ octave, volume = 0 }) => {
                   focus:outline-none
                   rounded-b-md
                   z-10
+                  piano-key black-key
                 `}
                 style={{
-                  left: `calc(${leftPosition} + 0.75rem)`,
+                  left: `calc(${key.position * 4}rem - 1.25rem)`,
                 }}
                 onMouseDown={() => {
                   if (isAudioInitialized && !isLoading) {
