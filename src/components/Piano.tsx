@@ -13,11 +13,29 @@ interface ActiveNote {
 }
 
 const Piano: React.FC<PianoProps> = ({ octave }) => {
-  const { isAudioInitialized, initializeAudio, sampler: globalSampler } = useAudio();
-  const [isLoading, setIsLoading] = useState(true);
+  const { isAudioInitialized, sampler } = useAudio();
   const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
   const [activeNotes, setActiveNotes] = useState<ActiveNote[]>([]);
-  const loadingRef = useRef<HTMLDivElement>(null);
+
+  const handleNoteStart = useCallback((note: string, octaveOffset: number = 0) => {
+    if (!sampler?.loaded || !isAudioInitialized) return;
+
+    const fullNote = `${note}${octave + (octaveOffset || 0)}`;
+    
+    if (!activeNotes.some(an => an.note === fullNote)) {
+      const velocity = 0.7 + Math.random() * 0.3;
+      sampler.triggerAttack(fullNote, Tone.now(), velocity);
+      setActiveNotes(prev => [...prev, { key: note, note: fullNote }]);
+    }
+  }, [activeNotes, sampler, isAudioInitialized, octave]);
+
+  const handleNoteEnd = useCallback((note: string, octaveOffset: number = 0) => {
+    if (!sampler?.loaded || !isAudioInitialized) return;
+
+    const fullNote = `${note}${octave + (octaveOffset || 0)}`;
+    sampler.triggerRelease(fullNote, Tone.now());
+    setActiveNotes(prev => prev.filter(an => an.note !== fullNote));
+  }, [sampler, isAudioInitialized, octave]);
 
   // Definición de teclas con posiciones específicas
   const whiteKeys = [
@@ -52,90 +70,11 @@ const Piano: React.FC<PianoProps> = ({ octave }) => {
     ),
   };
 
-  useEffect(() => {
-    // Inicializar el audio cuando se monte el componente
-    const initAudio = async () => {
-      try {
-        await initializeAudio();
-      } catch (error) {
-        console.error('Error initializing audio:', error);
-      }
-    };
-    initAudio();
-  }, [initializeAudio]);
-
-  useEffect(() => {
-    // Actualizar estado de carga cuando el sampler esté listo
-    if (globalSampler?.loaded && isAudioInitialized) {
-      setIsLoading(false);
-    }
-  }, [globalSampler?.loaded, isAudioInitialized]);
-
-  const getNearestSample = useCallback((note: string, octave: number): string => {
-    const fullNote = `${note}${octave}`;
-    if (PIANO_SAMPLES.urls.hasOwnProperty(fullNote)) {
-      return fullNote;
-    }
-
-    // Buscar la nota más cercana disponible
-    const octaves = [4, 3, 5, 2, 6, 1, 7]; // Prioridad de octavas
-    const notes = ['C', 'D#', 'F#', 'A']; // Notas disponibles en las muestras
-
-    // Primero intentar en la misma octava
-    for (const n of notes) {
-      if (PIANO_SAMPLES.urls.hasOwnProperty(`${n}${octave}`)) {
-        return `${n}${octave}`;
-      }
-    }
-
-    // Si no se encuentra, buscar en otras octavas
-    for (const o of octaves) {
-      for (const n of notes) {
-        if (PIANO_SAMPLES.urls.hasOwnProperty(`${n}${o}`)) {
-          return `${n}${o}`;
-        }
-      }
-    }
-
-    return 'C4'; // Nota por defecto si no se encuentra ninguna más cercana
-  }, []);
-
-  const calculateVelocity = useCallback((note: string, octave: number): number => {
-    // Ajustar la velocidad basada en la octava para un sonido más natural
-    const baseVelocity = 0.7;
-    const randomFactor = Math.random() * 0.2;
-    const octaveAdjustment = Math.max(0, 1 - Math.abs(octave - 4) * 0.1);
-    
-    return Math.min(1, baseVelocity * octaveAdjustment + randomFactor);
-  }, []);
-
-  const handleNoteStart = useCallback((note: string, octaveOffset: number = 0) => {
-    if (!globalSampler?.loaded || !isAudioInitialized) return;
-
-    const fullNote = `${note}${octave + (octaveOffset || 0)}`;
-    
-    // Evitar duplicar la misma nota
-    if (!activeNotes.some(an => an.note === fullNote)) {
-      const velocity = 0.7 + Math.random() * 0.3; // Añade variación natural al velocity
-      globalSampler.triggerAttack(fullNote, Tone.now(), velocity);
-      setActiveNotes(prev => [...prev, { key: note, note: fullNote }]);
-    }
-  }, [activeNotes, globalSampler, isAudioInitialized, octave]);
-
-  const handleNoteEnd = useCallback((note: string, octaveOffset: number = 0) => {
-    if (!globalSampler?.loaded || !isAudioInitialized) return;
-
-    const fullNote = `${note}${octave + (octaveOffset || 0)}`;
-    globalSampler.triggerRelease(fullNote, Tone.now());
-    setActiveNotes(prev => prev.filter(an => an.note !== fullNote));
-  }, [globalSampler, isAudioInitialized, octave]);
-
   // Manejo de eventos de teclado
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       let key = event.key.toLowerCase();
       
-      // Manejo especial para la tecla 'ñ'
       if (event.code === 'Semicolon' && event.location === 0) {
         key = 'ñ';
       }
@@ -150,7 +89,6 @@ const Piano: React.FC<PianoProps> = ({ octave }) => {
     const handleKeyUp = (event: KeyboardEvent) => {
       let key = event.key.toLowerCase();
       
-      // Manejo especial para la tecla 'ñ'
       if (event.code === 'Semicolon' && event.location === 0) {
         key = 'ñ';
       }
@@ -177,14 +115,6 @@ const Piano: React.FC<PianoProps> = ({ octave }) => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-8">
-      {isLoading && (
-        <div 
-          ref={loadingRef}
-          className="fixed top-4 left-1/2 transform -translate-x-1/2 text-gray-600 text-sm"
-        >
-          Cargando sonidos de piano...
-        </div>
-      )}
       <div className="relative inline-flex">
         {/* Teclas blancas */}
         <div className="relative flex">
@@ -210,7 +140,6 @@ const Piano: React.FC<PianoProps> = ({ octave }) => {
                     handleNoteEnd(key.note, key.octaveOffset);
                   }
                 }}
-                disabled={isLoading}
               >
                 <span className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-black font-medium text-sm">
                   {key.label}
@@ -245,7 +174,6 @@ const Piano: React.FC<PianoProps> = ({ octave }) => {
                     handleNoteEnd(key.note, key.octaveOffset);
                   }
                 }}
-                disabled={isLoading}
               >
                 <span className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white font-medium text-sm">
                   {key.label}
