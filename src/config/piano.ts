@@ -31,7 +31,10 @@ export const PIANO_SAMPLES = {
     'A7': 'https://tonejs.github.io/audio/salamander/A7.mp3',
     'C8': 'https://tonejs.github.io/audio/salamander/C8.mp3'
   },
-  release: 0.4, // Release más corto para un sonido más preciso
-  volume: -8,
-  baseUrl: ''
+  volume: -12, // Ajustado para un volumen más natural
+  maxPolyphony: 32, // Número máximo de voces simultáneas
+  envelope: {
+    attack: 0.002,  // Ataque rápido pero no instantáneo
+    release: 1.2    // Release suave y natural
+  }
 };

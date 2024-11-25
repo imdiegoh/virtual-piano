@@ -1,58 +1,97 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import * as Tone from 'tone';
+import { PIANO_SAMPLES } from '@/config/piano';
 
 interface AudioContextType {
   isAudioInitialized: boolean;
   initializeAudio: () => Promise<void>;
+  sampler: Tone.Sampler | null;
 }
 
-const AudioContext = createContext<AudioContextType | undefined>(undefined);
+const AudioCtx = createContext<AudioContextType | undefined>(undefined);
 
-export function AudioProvider({ children }: { children: React.ReactNode }) {
+let sampler: Tone.Sampler | null = null;
+
+export function AudioProvider({ children }: { children: ReactNode }) {
   const [isAudioInitialized, setIsAudioInitialized] = useState(false);
 
-  const initializeAudio = async () => {
-    try {
-      await Tone.start();
-      setIsAudioInitialized(true);
-    } catch (error) {
-      console.error('Audio initialization error:', error);
-    }
-  };
-
   useEffect(() => {
-    const handleInteraction = async () => {
-      if (!isAudioInitialized) {
-        await initializeAudio();
-        // Removemos los event listeners después de la inicialización
-        window.removeEventListener('click', handleInteraction);
-        window.removeEventListener('keydown', handleInteraction);
-        window.removeEventListener('touchstart', handleInteraction);
+    const setupAudio = async () => {
+      if (!sampler) {
+        try {
+          sampler = new Tone.Sampler({
+            urls: PIANO_SAMPLES.urls,
+            volume: PIANO_SAMPLES.volume,
+            attack: PIANO_SAMPLES.envelope.attack,
+            release: PIANO_SAMPLES.envelope.release,
+            onload: () => {
+              console.log('Piano samples loaded successfully');
+            }
+          }).toDestination();
+
+          // Esperar a que las muestras se carguen
+          await new Promise<void>((resolve) => {
+            const checkLoaded = () => {
+              if (sampler?.loaded) {
+                resolve();
+              } else {
+                setTimeout(checkLoaded, 100);
+              }
+            };
+            checkLoaded();
+          });
+
+          // Una vez que las muestras están cargadas, inicializamos el contexto de audio
+          await Tone.start();
+          setIsAudioInitialized(true);
+          console.log('Audio system initialized');
+        } catch (error) {
+          console.error('Error initializing audio:', error);
+          setIsAudioInitialized(false);
+        }
       }
     };
 
-    window.addEventListener('click', handleInteraction);
-    window.addEventListener('keydown', handleInteraction);
-    window.addEventListener('touchstart', handleInteraction);
+    setupAudio();
 
     return () => {
-      window.removeEventListener('click', handleInteraction);
-      window.removeEventListener('keydown', handleInteraction);
-      window.removeEventListener('touchstart', handleInteraction);
+      if (sampler) {
+        sampler.dispose();
+        sampler = null;
+        setIsAudioInitialized(false);
+      }
     };
-  }, [isAudioInitialized]);
+  }, []);
+
+  const initializeAudio = async () => {
+    try {
+      if (!isAudioInitialized) {
+        await Tone.start();
+        setIsAudioInitialized(true);
+      }
+    } catch (error) {
+      console.error('Error initializing audio:', error);
+      setIsAudioInitialized(false);
+    }
+  };
 
   return (
-    <AudioContext.Provider value={{ isAudioInitialized, initializeAudio }}>
+    <AudioCtx.Provider
+      value={{
+        isAudioInitialized,
+        initializeAudio,
+        sampler
+      }}
+    >
       {children}
-    </AudioContext.Provider>
+    </AudioCtx.Provider>
   );
 }
 
 export function useAudio() {
-  const context = useContext(AudioContext);
+  const context = useContext(AudioCtx);
   if (context === undefined) {
     throw new Error('useAudio must be used within an AudioProvider');
   }

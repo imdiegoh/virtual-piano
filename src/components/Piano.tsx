@@ -14,11 +14,10 @@ interface ActiveNote {
 }
 
 const Piano: React.FC<PianoProps> = ({ octave, volume = 0 }) => {
-  const [sampler, setSampler] = useState<Tone.Sampler | null>(null);
+  const { isAudioInitialized, initializeAudio, sampler: globalSampler } = useAudio();
   const [isLoading, setIsLoading] = useState(true);
   const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
   const [activeNotes, setActiveNotes] = useState<ActiveNote[]>([]);
-  const { isAudioInitialized } = useAudio();
   const loadingRef = useRef<HTMLDivElement>(null);
 
   // Definición de teclas con posiciones específicas
@@ -32,7 +31,7 @@ const Piano: React.FC<PianoProps> = ({ octave, volume = 0 }) => {
     { note: 'B', key: 'J', label: 'J', position: 6 },
     { note: 'C', key: 'K', label: 'K', position: 7, octaveOffset: 1 },
     { note: 'D', key: 'L', label: 'L', position: 8, octaveOffset: 1 },
-    { note: 'E', key: 'Ñ', label: 'Ñ', position: 9, octaveOffset: 1 },
+    { note: 'E', key: 'ñ', label: 'Ñ', position: 9, octaveOffset: 1 },
   ];
 
   const blackKeys = [
@@ -55,30 +54,23 @@ const Piano: React.FC<PianoProps> = ({ octave, volume = 0 }) => {
   };
 
   useEffect(() => {
-    if (isAudioInitialized) {
-      setIsLoading(true);
-      const newSampler = new Tone.Sampler({
-        urls: PIANO_SAMPLES.urls,
-        onload: () => {
-          setIsLoading(false);
-          console.log('Piano samples loaded successfully');
-        },
-        onerror: (error) => {
-          console.error('Error loading piano samples:', error);
-          setIsLoading(false);
-        },
-        volume: PIANO_SAMPLES.volume + volume,
-        release: PIANO_SAMPLES.release,
-        attack: 0.005
-      }).connect(new Tone.Gain(0.8)).toDestination();
+    // Inicializar el audio cuando se monte el componente
+    const initAudio = async () => {
+      try {
+        await initializeAudio();
+      } catch (error) {
+        console.error('Error initializing audio:', error);
+      }
+    };
+    initAudio();
+  }, [initializeAudio]);
 
-      setSampler(newSampler);
-
-      return () => {
-        newSampler.dispose();
-      };
+  useEffect(() => {
+    // Actualizar estado de carga cuando el sampler esté listo
+    if (globalSampler?.loaded && isAudioInitialized) {
+      setIsLoading(false);
     }
-  }, [isAudioInitialized, volume]);
+  }, [globalSampler?.loaded, isAudioInitialized]);
 
   const getNearestSample = useCallback((note: string, octave: number): string => {
     const fullNote = `${note}${octave}`;
@@ -118,63 +110,71 @@ const Piano: React.FC<PianoProps> = ({ octave, volume = 0 }) => {
     return Math.min(1, baseVelocity * octaveAdjustment + randomFactor);
   }, []);
 
-  const playNote = useCallback((note: string, octaveOffset: number = 0, key: string) => {
-    if (sampler && isAudioInitialized && !isLoading) {
-      try {
-        const targetOctave = octave + octaveOffset;
-        const nearestNote = getNearestSample(note, targetOctave);
-        const velocity = calculateVelocity(note, targetOctave);
+  const handleNoteStart = useCallback((note: string, octaveOffset: number = 0) => {
+    if (!globalSampler?.loaded || !isAudioInitialized) return;
 
-        sampler.triggerAttack(nearestNote, Tone.now(), velocity);
-        setActiveNotes(prev => [...prev, { key, note: nearestNote }]);
-      } catch (error) {
-        console.error('Error playing note:', error);
-      }
+    const fullNote = `${note}${octave + (octaveOffset || 0)}`;
+    
+    // Evitar duplicar la misma nota
+    if (!activeNotes.some(an => an.note === fullNote)) {
+      const velocity = 0.7 + Math.random() * 0.3; // Añade variación natural al velocity
+      globalSampler.triggerAttack(fullNote, Tone.now(), velocity);
+      setActiveNotes(prev => [...prev, { key: note, note: fullNote }]);
     }
-  }, [sampler, octave, isAudioInitialized, isLoading, getNearestSample, calculateVelocity]);
+  }, [activeNotes, globalSampler, isAudioInitialized, octave]);
 
-  const stopNote = useCallback((key: string) => {
-    if (sampler && isAudioInitialized && !isLoading) {
-      try {
-        const noteToStop = activeNotes.find(n => n.key === key);
-        if (noteToStop) {
-          sampler.triggerRelease(noteToStop.note, Tone.now());
-          setActiveNotes(prev => prev.filter(n => n.key !== key));
-        }
-      } catch (error) {
-        console.error('Error stopping note:', error);
-      }
-    }
-  }, [sampler, isAudioInitialized, isLoading, activeNotes]);
+  const handleNoteEnd = useCallback((note: string, octaveOffset: number = 0) => {
+    if (!globalSampler?.loaded || !isAudioInitialized) return;
 
-  const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    const key = event.key.toLowerCase();
-    if (keyMap[key] && !activeKeys.has(key)) {
-      setActiveKeys(prev => new Set(prev).add(key));
-      playNote(keyMap[key].note, keyMap[key].octaveOffset, key);
-    }
-  }, [keyMap, activeKeys, playNote]);
+    const fullNote = `${note}${octave + (octaveOffset || 0)}`;
+    globalSampler.triggerRelease(fullNote, Tone.now());
+    setActiveNotes(prev => prev.filter(an => an.note !== fullNote));
+  }, [globalSampler, isAudioInitialized, octave]);
 
-  const handleKeyUp = useCallback((event: KeyboardEvent) => {
-    const key = event.key.toLowerCase();
-    if (keyMap[key]) {
-      setActiveKeys(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(key);
-        return newSet;
-      });
-      stopNote(key);
-    }
-  }, [keyMap, stopNote]);
-
+  // Manejo de eventos de teclado
   useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      let key = event.key.toLowerCase();
+      
+      // Manejo especial para la tecla 'ñ'
+      if (event.code === 'Semicolon' && event.location === 0) {
+        key = 'ñ';
+      }
+      
+      if (keyMap[key] && !event.repeat) {
+        const { note, octaveOffset } = keyMap[key];
+        handleNoteStart(note, octaveOffset);
+        setActiveKeys(prev => new Set([...prev, key]));
+      }
+    };
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      let key = event.key.toLowerCase();
+      
+      // Manejo especial para la tecla 'ñ'
+      if (event.code === 'Semicolon' && event.location === 0) {
+        key = 'ñ';
+      }
+      
+      if (keyMap[key]) {
+        const { note, octaveOffset } = keyMap[key];
+        handleNoteEnd(note, octaveOffset);
+        setActiveKeys(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(key);
+          return newSet;
+        });
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
+
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [handleKeyDown, handleKeyUp]);
+  }, [handleNoteStart, handleNoteEnd, keyMap]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-8">
@@ -209,8 +209,8 @@ const Piano: React.FC<PianoProps> = ({ octave, volume = 0 }) => {
                 onMouseDown={() => {
                   if (isAudioInitialized && !isLoading) {
                     const keyLower = key.key.toLowerCase();
-                    playNote(key.note, key.octaveOffset || 0, keyLower);
-                    setActiveKeys(prev => new Set(prev).add(keyLower));
+                    handleNoteStart(key.note, key.octaveOffset || 0);
+                    setActiveKeys(prev => new Set([...prev, keyLower]));
                   }
                 }}
                 onMouseUp={() => {
@@ -221,7 +221,7 @@ const Piano: React.FC<PianoProps> = ({ octave, volume = 0 }) => {
                       newSet.delete(keyLower);
                       return newSet;
                     });
-                    stopNote(keyLower);
+                    handleNoteEnd(key.note, key.octaveOffset || 0);
                   }
                 }}
                 onMouseLeave={() => {
@@ -233,7 +233,7 @@ const Piano: React.FC<PianoProps> = ({ octave, volume = 0 }) => {
                         newSet.delete(keyLower);
                         return newSet;
                       });
-                      stopNote(keyLower);
+                      handleNoteEnd(key.note, key.octaveOffset || 0);
                     }
                   }
                 }}
@@ -271,8 +271,8 @@ const Piano: React.FC<PianoProps> = ({ octave, volume = 0 }) => {
                 onMouseDown={() => {
                   if (isAudioInitialized && !isLoading) {
                     const keyLower = key.key.toLowerCase();
-                    playNote(key.note, key.octaveOffset || 0, keyLower);
-                    setActiveKeys(prev => new Set(prev).add(keyLower));
+                    handleNoteStart(key.note, key.octaveOffset || 0);
+                    setActiveKeys(prev => new Set([...prev, keyLower]));
                   }
                 }}
                 onMouseUp={() => {
@@ -283,7 +283,7 @@ const Piano: React.FC<PianoProps> = ({ octave, volume = 0 }) => {
                       newSet.delete(keyLower);
                       return newSet;
                     });
-                    stopNote(keyLower);
+                    handleNoteEnd(key.note, key.octaveOffset || 0);
                   }
                 }}
                 onMouseLeave={() => {
@@ -295,7 +295,7 @@ const Piano: React.FC<PianoProps> = ({ octave, volume = 0 }) => {
                         newSet.delete(keyLower);
                         return newSet;
                       });
-                      stopNote(keyLower);
+                      handleNoteEnd(key.note, key.octaveOffset || 0);
                     }
                   }
                 }}
