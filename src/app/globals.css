@@ -1,0 +1,52 @@
+/* Tailwind directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles */
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-rgb: 243, 244, 246;
+}
+
+@layer base {
+  body {
+    @apply min-h-screen m-0 p-0;
+    color: rgb(var(--foreground-rgb));
+    background: rgb(var(--background-rgb));
+  }
+}
+
+@layer components {
+  .piano-key {
+    @apply select-none touch-none;
+  }
+
+  .black-key {
+    @apply absolute bg-black z-10 origin-top;
+  }
+
+  .white-key {
+    @apply bg-white border-r border-gray-200;
+  }
+}
+
+@layer utilities {
+  .white-key:hover {
+    @apply bg-gray-50;
+  }
+
+  .black-key:hover {
+    @apply bg-gray-800;
+  }
+
+  .white-key:active,
+  .white-key.active {
+    @apply bg-gray-100;
+  }
+
+  .black-key:active,
+  .black-key.active {
+    @apply bg-gray-700;
+  }
+}
