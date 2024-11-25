@@ -1,4 +1,4 @@
-[![virtual-piano.png](https://i.postimg.cc/DZ0hjc0P/virtual-piano.png)](https://postimg.cc/06ThrDpz)
+[![virtual-piano.png](https://i.postimg.cc/T3BHMqtc/virtual-piano.png)](https://postimg.cc/G4JjvYwB)
 
 # 🎹 Virtual Piano
 
