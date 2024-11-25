@@ -1,6 +1,5 @@
 import React from 'react';
 import './globals.css';
-import { AudioProvider } from '@/contexts/AudioContext';
 
 export const metadata = {
   title: 'Piano Virtual',
@@ -15,9 +14,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className="antialiased">
-        <AudioProvider>
-          {children}
-        </AudioProvider>
+        {children}
       </body>
     </html>
   )

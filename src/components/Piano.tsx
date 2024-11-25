@@ -114,7 +114,7 @@ const Piano: React.FC<PianoProps> = ({ octave }) => {
   }, [handleNoteStart, handleNoteEnd, keyMap]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-8">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 p-8 transition-colors duration-200">
       <div className="relative inline-flex">
         {/* Teclas blancas */}
         <div className="relative flex">
@@ -125,10 +125,10 @@ const Piano: React.FC<PianoProps> = ({ octave }) => {
                 key={key.key}
                 className={`
                   relative w-16 h-60
-                  border border-gray-300
-                  ${isActive ? 'bg-blue-300' : 'bg-white'}
-                  hover:bg-gray-50
-                  active:bg-blue-300
+                  border border-gray-300 dark:border-gray-600
+                  ${isActive ? 'bg-blue-300 dark:bg-blue-500' : 'bg-white dark:bg-gray-200'}
+                  hover:bg-gray-50 dark:hover:bg-gray-300
+                  active:bg-blue-300 dark:active:bg-blue-500
                   transition-colors duration-75
                   focus:outline-none
                   first:rounded-l-md last:rounded-r-md
@@ -141,7 +141,7 @@ const Piano: React.FC<PianoProps> = ({ octave }) => {
                   }
                 }}
               >
-                <span className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-black font-medium text-sm">
+                <span className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-black dark:text-gray-800 font-medium text-sm">
                   {key.label}
                 </span>
               </button>
@@ -160,9 +160,9 @@ const Piano: React.FC<PianoProps> = ({ octave }) => {
                 style={{ left: leftPosition }}
                 className={`
                   absolute w-8 h-36
-                  ${isActive ? 'bg-blue-300' : 'bg-gray-800'}
-                  hover:bg-gray-700
-                  active:bg-blue-300
+                  ${isActive ? 'bg-blue-300 dark:bg-blue-500' : 'bg-gray-800 dark:bg-gray-900'}
+                  hover:bg-gray-700 dark:hover:bg-gray-800
+                  active:bg-blue-300 dark:active:bg-blue-500
                   transition-colors duration-75
                   focus:outline-none
                   rounded-b-md
@@ -184,9 +184,13 @@ const Piano: React.FC<PianoProps> = ({ octave }) => {
         </div>
       </div>
 
-      <div className="mt-8 text-gray-600">
-        <p className="text-center">Octava actual: {octave}</p>
-        <p className="text-sm text-center">Usa Z/X para cambiar de octava</p>
+      <div className="mt-8 space-y-2">
+        <p className="text-center text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
+          Current Octave: {octave}
+        </p>
+        <p className="text-center text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 py-2 px-4 rounded-lg shadow-sm">
+          Press Z/X to change octave
+        </p>
       </div>
     </div>
   );
