@@ -1,47 +1,38 @@
-# Virtual Piano
+# 🎹 Virtual Piano
 
 An interactive virtual piano built with Next.js, TypeScript, and Tone.js.
 
-## Features
+## ✨ Features
 
-- Interactive piano keyboard with mouse and keyboard controls
-- High-quality piano samples using Salamander Grand Piano
-- Responsive design with Tailwind CSS
-- Real-time audio playback with Tone.js
-- Dynamic octave switching
-- Volume control
+- 🎵 High-quality piano sound using Tone.js
+- ⌨️ Keyboard controls
+- 🌗 Dark/Light mode with persistence
+- 🎼 Dynamic octave switching (Z/X keys)
+- 💻 Modern UI with Tailwind CSS
 
-## Technologies Used
+## 🚀 Tech Stack
 
-- Next.js 14
-- TypeScript
-- Tone.js
-- Tailwind CSS
-- React
+- **Frontend**: Next.js 14
+- **Language**: TypeScript
+- **Audio**: Tone.js
+- **Styling**: Tailwind CSS
+- **State**: React Context
 
-## Getting Started
+## 🎮 Controls
 
-1. Clone the repository:
+- **White Keys**: A, S, D, F, G, H, J, K, L, Ñ
+- **Black Keys**: W, E, T, Y, U, O, P
+- **Octave**: Z (down), X (up)
+- **Theme**: Toggle button in top-right corner
+
+## 🛠️ Quick Start
+
 ```bash
-git clone https://github.com/yourusername/virtual-piano.git
-```
-
-2. Install dependencies:
-```bash
-cd virtual-piano
+# Install dependencies
 npm install
-```
 
-3. Run the development server:
-```bash
+# Run development server
 npm run dev
+
+# Open http://localhost:3000
 ```
-
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## Usage
-
-- Use your computer keyboard to play the piano (keys A-L)
-- Click on piano keys with your mouse
-- Use the volume control to adjust the sound
-- Enjoy playing!
