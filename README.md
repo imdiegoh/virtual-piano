@@ -6,7 +6,7 @@ An interactive virtual piano built with Next.js, TypeScript, and Tone.js.
 
 ## 🌐 Live Demo
 
-Try it out:https://virtual-piano-git-main-diego-hernandezs-projects-83511ad8.vercel.app/
+Try it out: https://virtual-piano-git-main-diego-hernandezs-projects-83511ad8.vercel.app/
 
 ## ✨ Features
 
