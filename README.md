@@ -8,14 +8,6 @@ An interactive virtual piano built with Next.js, TypeScript, and Tone.js.
 
 Try it out: https://virtual-piano-git-main-diego-hernandezs-projects-83511ad8.vercel.app/
 
-## ✨ Features
-
-- 🎵 High-quality piano sound using Tone.js
-- ⌨️ Keyboard controls
-- 🌗 Dark/Light mode with persistence
-- 🎼 Dynamic octave switching (Z/X keys)
-- 💻 Modern UI with Tailwind CSS
-
 ## 🚀 Tech Stack
 
 - **Frontend**: Next.js 14
